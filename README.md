@@ -58,13 +58,14 @@ lung_nodule_pipeline/
 
 ## 2. Download Model Weights
 
-Pre-trained weights are stored on the `genos` rclone remote. Download them before running inference:
+Pre-trained weights are hosted on Google Drive (~1.4 GB). Run the download script:
 
 ```bash
-rclone copy genos:luna/weights/ ./weights/ --progress
+bash download_weights.sh
 ```
 
-This downloads (~1.4 GB total):
+This installs [`gdown`](https://github.com/wkentaro/gdown) and downloads the weights folder directly from:
+[https://drive.google.com/drive/folders/1LyVA8gn6EF71iCeVbYkefPp5J1MYxpIR](https://drive.google.com/drive/folders/1LyVA8gn6EF71iCeVbYkefPp5J1MYxpIR)
 
 ```
 weights/
@@ -74,8 +75,6 @@ weights/
 └── unet3D_encoder_scse/              # 3D classification ensemble (5 × 55 MB)
     └── best_metric_model_fold0..4.pth
 ```
-
-> If you don't have access to `genos`, ask the team for the rclone config or an alternative download link.
 
 ---
 
