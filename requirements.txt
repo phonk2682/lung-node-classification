@@ -1,0 +1,28 @@
+# Core deep learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# MONAI — detection pipeline (lung_nodule_detection.py)
+monai>=1.3.0
+
+# ITK reader backend required by MONAI's LoadImaged(reader="itkreader")
+itk>=5.3.0
+
+# NIfTI orientation support required by MONAI's Orientationd
+nibabel>=5.0.0
+
+# Medical imaging I/O
+SimpleITK>=2.3.0
+
+# Numerical / data
+# NOTE: numpy must be <2 for scipy compatibility
+numpy>=1.24.0,<2.0.0
+scipy>=1.10.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# Model backbones
+timm>=0.9.0
+
+# Progress bars / utilities
+tqdm>=4.65.0

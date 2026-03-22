@@ -1,0 +1,44 @@
+# ── Large data files (not committed — use DVC or manual download) ──
+data/image/
+data/metadata/
+data/*.csv
+data/csv/
+
+# ── Model weights ──
+weights/
+checkpoints/
+*.pth
+*.ts
+
+# ── Pipeline outputs ──
+output/
+results/
+*.nii.gz
+*.json
+
+# ── Python cache ──
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual environments ──
+.env
+.venv
+env/
+venv/
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Logs ──
+*.log
