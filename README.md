@@ -8,9 +8,10 @@ Built on the LUNA25 challenge framework — Group 12.
 ## Table of Contents
 
 1. [Project Structure](#1-project-structure)
-2. [Environment Setup](#2-environment-setup)
-3. [Training](#3-training)
-4. [Inference](#4-inference)
+2. [Download Model Weights](#2-download-model-weights)
+3. [Environment Setup](#3-environment-setup)
+4. [Training](#4-training)
+5. [Inference](#5-inference)
 
 ---
 
@@ -55,7 +56,30 @@ lung_nodule_pipeline/
 
 ---
 
-## 2. Environment Setup
+## 2. Download Model Weights
+
+Pre-trained weights are stored on the `genos` rclone remote. Download them before running inference:
+
+```bash
+rclone copy genos:luna/weights/ ./weights/ --progress
+```
+
+This downloads (~1.4 GB total):
+
+```
+weights/
+├── dt_model.ts                       # RetinaNet detection model (80 MB)
+├── ResNet152-confirmed/              # 2D classification ensemble (5 × 233 MB)
+│   └── fold_1..5/best_metric_model.pth
+└── unet3D_encoder_scse/              # 3D classification ensemble (5 × 55 MB)
+    └── best_metric_model_fold0..4.pth
+```
+
+> If you don't have access to `genos`, ask the team for the rclone config or an alternative download link.
+
+---
+
+## 3. Environment Setup
 
 ```bash
 # Create and activate environment
@@ -77,7 +101,7 @@ python -c "import torch, monai, SimpleITK, timm; print('OK')"
 
 ---
 
-## 3. Training
+## 4. Training
 
 See **[docs/TRAINING.md](docs/TRAINING.md)** for the full guide, including:
 
@@ -99,7 +123,7 @@ python train.py \
 
 ---
 
-## 4. Inference
+## 5. Inference
 
 See **[docs/INFERENCE.md](docs/INFERENCE.md)** for the full guide, including:
 
