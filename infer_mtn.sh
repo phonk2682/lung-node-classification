@@ -58,7 +58,6 @@ MTN_DIR="$(realpath "$MTN_DIR")"
 OUTPUT_DIR="$(realpath "$OUTPUT_DIR")"
 EXTRACTED_DIR="$OUTPUT_DIR/extracted"
 JSON_DIR="$OUTPUT_DIR/json"
-CSV_OUT="$OUTPUT_DIR/results.csv"
 
 mkdir -p "$EXTRACTED_DIR" "$JSON_DIR"
 
@@ -143,75 +142,39 @@ for series_dir in "${SERIES_DIRS[@]}"; do
 
 done
 
-# ── Step 4: Aggregate JSON results into CSV ───────────────────────────────────
+# ── Step 4: Aggregate JSON results ───────────────────────────────────────────
+JSON_OUT="$OUTPUT_DIR/results.json"
+
 echo ""
-echo "[Step 4] Building CSV from JSON results..."
+echo "[Step 4] Building results.json ..."
 
 python - <<PYEOF
 import json
-import csv
 from pathlib import Path
 
 json_dir = Path("$JSON_DIR")
-csv_out  = Path("$CSV_OUT")
+out_path = Path("$JSON_OUT")
 
-rows = []
+results = []
 for jf in sorted(json_dir.glob("*_results.json")):
     try:
         data = json.loads(jf.read_text())
     except Exception as e:
         print(f"  [WARN] Could not read {jf.name}: {e}")
         continue
+    results.append(data)
 
-    patient_id = data.get("patient_id", jf.stem.replace("_results", ""))
-    nodules    = data.get("nodules", [])
-
-    if not nodules:
-        # Write one row indicating no nodules found
-        rows.append({
-            "patient_id":            patient_id,
-            "nodule_id":             "",
-            "detection_score":       "",
-            "cx_ras_mm":             "",
-            "cy_ras_mm":             "",
-            "cz_ras_mm":             "",
-            "malignancy_probability": "",
-            "label":                 "",
-            "label_str":             "No nodules detected",
-        })
-    else:
-        for n in nodules:
-            ctr = n.get("center_ras_mm", {})
-            rows.append({
-                "patient_id":            patient_id,
-                "nodule_id":             n.get("nodule_id", ""),
-                "detection_score":       round(n.get("detection_score", 0), 4),
-                "cx_ras_mm":             round(ctr.get("x", 0), 2),
-                "cy_ras_mm":             round(ctr.get("y", 0), 2),
-                "cz_ras_mm":             round(ctr.get("z", 0), 2),
-                "malignancy_probability": round(n.get("malignancy_probability", 0), 4),
-                "label":                 n.get("label", ""),
-                "label_str":             n.get("label_str", ""),
-            })
-
-if not rows:
+if not results:
     print("  [WARN] No JSON result files found.")
 else:
-    fieldnames = [
-        "patient_id", "nodule_id", "detection_score",
-        "cx_ras_mm", "cy_ras_mm", "cz_ras_mm",
-        "malignancy_probability", "label", "label_str",
-    ]
-    with open(csv_out, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-    print(f"  Wrote {len(rows)} row(s) to: {csv_out}")
+    with open(out_path, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"  Wrote {len(results)} case(s) to: {out_path}")
 PYEOF
 
 echo ""
 echo "============================================================"
 echo " ALL DONE"
-echo " Results CSV : $CSV_OUT"
+echo " Results     : $JSON_OUT"
 echo " Raw JSON    : $JSON_DIR/"
 echo "============================================================"

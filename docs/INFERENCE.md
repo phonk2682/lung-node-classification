@@ -313,26 +313,38 @@ output/mtn/
 └── results.csv                         # Final aggregated CSV
 ```
 
-**`results.csv` columns:**
+**`results.json` format** — one entry per series (case-level):
 
-| Column | Description |
-|--------|-------------|
-| `patient_id` | Series folder name |
-| `nodule_id` | Nodule index within the series |
-| `detection_score` | RetinaNet confidence [0–1] |
-| `cx_ras_mm`, `cy_ras_mm`, `cz_ras_mm` | Nodule centre in RAS world coordinates (mm) |
-| `malignancy_probability` | Ensemble probability [0–1] |
-| `label` | `0` = Benign, `1` = Malignant |
-| `label_str` | `Benign` / `Malignant` / `No nodules detected` |
-
-**Example `results.csv`:**
-
-```csv
-patient_id,nodule_id,detection_score,cx_ras_mm,cy_ras_mm,cz_ras_mm,malignancy_probability,label,label_str
-3-1.25mm NHU MO PHOI,1,0.9251,34.30,-44.20,-49.30,0.1165,0,Benign
-3-1.25mm NHU MO PHOI,2,0.8512,-12.50,88.10,103.70,0.2341,0,Benign
-4-1.25mm TRUNG THAT,,,,,,,,No nodules detected
+```json
+[
+  {
+    "seriesInstanceUID": "3-1.25mm NHU MO PHOI",
+    "probability": 0.1165,
+    "predictionLabel": 0,
+    "processingTimeMs": 4821,
+    "CoordX": 34.30,
+    "CoordY": -44.20,
+    "CoordZ": -49.30
+  },
+  {
+    "seriesInstanceUID": "4-1.25mm TRUNG THAT",
+    "probability": 0.0,
+    "predictionLabel": 0,
+    "processingTimeMs": 1203,
+    "CoordX": null,
+    "CoordY": null,
+    "CoordZ": null
+  }
+]
 ```
+
+| Field | Description |
+|-------|-------------|
+| `seriesInstanceUID` | Series folder name |
+| `probability` | Max malignancy probability across all detected nodules |
+| `predictionLabel` | `0` = Benign, `1` = Malignant (case-level) |
+| `processingTimeMs` | Total processing time for this series |
+| `CoordX/Y/Z` | LPS world coordinates (mm) of the most suspicious nodule; `null` if no nodules detected |
 
 ### Re-runs
 

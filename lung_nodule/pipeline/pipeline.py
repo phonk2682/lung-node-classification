@@ -25,6 +25,7 @@ Conversion from RAS -> LPS:
 
 import json
 import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
@@ -185,6 +186,8 @@ def run_pipeline(
     if weights_dir_3d is None:
         weights_dir_3d = str(pipeline_root / "weights" / "unet3D_encoder_scse")
 
+    t0 = time.time()
+
     # ---- Step 1: DICOM -> NIfTI ----
     use_tmp = output_dir is None
     tmp_dir = tempfile.mkdtemp() if use_tmp else None
@@ -203,11 +206,15 @@ def run_pipeline(
 
     if not detections:
         print("[INFO] No nodules detected above the confidence threshold.")
+        elapsed_ms = int((time.time() - t0) * 1000)
         result = {
-            "patient_id": patient_id,
-            "nii_path": str(nii_path),
-            "nodules": [],
-            "message": "No nodules detected.",
+            "seriesInstanceUID": patient_id,
+            "probability": 0.0,
+            "predictionLabel": 0,
+            "processingTimeMs": elapsed_ms,
+            "CoordX": None,
+            "CoordY": None,
+            "CoordZ": None,
         }
         _save_and_print(result, work_dir, patient_id)
         return result
@@ -236,8 +243,7 @@ def run_pipeline(
         nodule_results.append({
             "nodule_id": i,
             "detection_score": det["score"],
-            "center_ras_mm": {"x": det["cx_ras"], "y": det["cy_ras"], "z": det["cz_ras"]},
-            "bounding_box_mm": {"w": det["w"], "h": det["h"], "d": det["d"]},
+            "coord_lps_mm": [x_lps, y_lps, z_lps],
             "malignancy_probability": classification["probability"],
             "label": classification["label"],
             "label_str": classification["label_str"],
@@ -245,10 +251,24 @@ def run_pipeline(
 
         print(f"    -> {classification['label_str']} (probability={classification['probability']:.4f})")
 
+    # ---- Case-level aggregation ----
+    # A case is malignant if any nodule is malignant.
+    # Report the probability and coordinates of the most suspicious nodule.
+    best = max(nodule_results, key=lambda n: n["malignancy_probability"])
+    case_prob = best["malignancy_probability"]
+    case_label = 1 if case_prob >= threshold else 0
+    coord_x, coord_y, coord_z = best["coord_lps_mm"]
+
+    elapsed_ms = int((time.time() - t0) * 1000)
+
     result = {
-        "patient_id": patient_id,
-        "nii_path": str(nii_path),
-        "nodules": nodule_results,
+        "seriesInstanceUID": patient_id,
+        "probability": round(case_prob, 6),
+        "predictionLabel": case_label,
+        "processingTimeMs": elapsed_ms,
+        "CoordX": round(coord_x, 2),
+        "CoordY": round(coord_y, 2),
+        "CoordZ": round(coord_z, 2),
     }
 
     _save_and_print(result, work_dir, patient_id)
@@ -261,12 +281,10 @@ def _save_and_print(result: dict, work_dir: Path, patient_id: str):
         json.dump(result, f, indent=2)
     print(f"\n[Done] Results saved to: {out_json}")
 
-    nodules = result.get("nodules", [])
-    if nodules:
-        print(f"\n{'─'*50}")
-        print(f"SUMMARY — {len(nodules)} nodule(s) detected")
-        print(f"{'─'*50}")
-        for n in nodules:
-            print(f"  Nodule {n['nodule_id']}: {n['label_str']:10s}  "
-                  f"p={n['malignancy_probability']:.4f}  "
-                  f"detection_score={n['detection_score']:.3f}")
+    label_str = "Malignant" if result["predictionLabel"] == 1 else "Benign"
+    print(f"\n{'─'*50}")
+    print(f"SUMMARY — {label_str}  (probability={result['probability']:.4f})")
+    if result["CoordX"] is not None:
+        print(f"Most suspicious nodule: CoordX={result['CoordX']}  CoordY={result['CoordY']}  CoordZ={result['CoordZ']}  (LPS mm)")
+    print(f"Processing time: {result['processingTimeMs']} ms")
+    print(f"{'─'*50}")
